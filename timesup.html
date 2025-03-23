@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimesUp Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            scroll-behavior: smooth;
+        }
+        header {
+            background: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        section {
+            height: 100vh;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        #home { background: lightblue; }
+        #about { background: lightgreen; }
+        #services { background: lightcoral; }
+        #contact { background: lightgoldenrodyellow; }
+        #personal-info { background: lightgray; }
+        .info-container {
+            max-width: 600px;
+            margin: auto;
+            text-align: left;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <a href="#services">Services</a>
+            <a href="#contact">Contact</a>
+            <a href="#personal-info">Personal Info</a>
+        </nav>
+    </header>
+    
+    <section id="home">
+        <h1>Live GPS Tracking</h1>
+        <div id="map"></div>
+    </section>
+    
+    <section id="about">
+        <h1>About Us</h1>
+        <p>Learn more about TimesUp here.</p>
+    </section>
+    
+    <section id="services">
+        <h1>Our Services</h1>
+        <p>Discover what we offer.</p>
+    </section>
+    
+    <section id="contact">
+        <h1>Contact Us</h1>
+        <p>Get in touch with us.</p>
+    </section>
+    
+    <section id="personal-info">
+        <h1>Personal Information</h1>
+        <div class="info-container">
+            <p><strong>Parent Name:</strong> <span id="parentName">Loading...</span></p>
+            <p><strong>Child Name:</strong> <span id="childName">Loading...</span></p>
+            <p><strong>Phone Number:</strong> <span id="phone">Loading...</span></p>
+            <p><strong>Home Address:</strong> <span id="address">Loading...</span></p>
+        </div>
+    </section>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAz5WQx1Js4QsJe-4d3DQ9YaSk5B2r8Cbg",
+            authDomain: "airiiiii.firebaseapp.com",
+            databaseURL: "https://airiiiii-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "airiiiii",
+            storageBucket: "airiiiii.firebasestorage.app",
+            messagingSenderId: "713286769537",
+            appId: "1:713286769537:web:ec3e2c3756e781b0362680"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Initialize Map
+        var map = L.map('map').setView([14.8540878, 120.2642545], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = L.marker([14.8540878, 120.2642545]).addTo(map)
+            .bindPopup('Barretto, Olongapo City')
+            .openPopup();
+
+        // Fetch the latest registered child
+        function fetchLatestChild() {
+            const timesupRef = ref(db, "TimesUp");
+
+            onValue(timesupRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const keys = Object.keys(data);
+                    const latestChild = data[keys[keys.length - 1]]; // Get the most recent child
+
+                    // Update Personal Info Section
+                    document.getElementById("parentName").innerText = latestChild.parentName;
+                    document.getElementById("childName").innerText = latestChild.childName;
+                    document.getElementById("phone").innerText = latestChild.phone;
+                    document.getElementById("address").innerText = latestChild.address;
+
+                    // Check if GPS data exists and update the map
+                    if (latestChild.latitude && latestChild.longitude) {
+                        const lat = latestChild.latitude;
+                        const lng = latestChild.longitude;
+
+                        // Update marker position
+                        marker.setLatLng([lat, lng])
+                            .bindPopup(Child's Location: ${lat}, ${lng})
+                            .openPopup();
+
+                        // Center the map to the new location
+                        map.setView([lat, lng], 15);
+                    }
+                } else {
+                    console.log("No data available.");
+                }
+            });
+        }
+
+        // Call the function to fetch and update the map
+        fetchLatestChild();
+    </script>
+</body>
+</html>
